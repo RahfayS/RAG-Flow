@@ -44,7 +44,6 @@ def validate_openai_key(api_key: str) -> tuple[bool, str]:
 def load_model(llm_config:ModelConfig,max_tokens:int=128,temperature:float = 0.2,default_model:str = "qwen2.5:3b") -> BaseChatModel | None :
     """Loads LLM"""
     model_type = llm_config["type"]
-    st.write(model_type)
     try:
         match model_type:
             case "local":

@@ -1,14 +1,11 @@
-from utils.chat_history_manager import ChatHistoryManager
-from utils.rag_manager import RAGManager
+from config import SESSIONS_DIR
 
-from dotenv import load_dotenv
 from pathlib import Path
 import streamlit as st
-import tempfile
+from pathlib import Path
 import uuid
 import os
-import streamlit as st
-from pathlib import Path
+
 
 # ==== Define Page Config ====
 st.set_page_config(
@@ -17,6 +14,34 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# ==== Session-state defaults ====
+defaults = {
+    "llm": None,
+    "embedding_model": None,
+    "text_splitter": None,
+    "reranker": None,
+    "temperature": 0.2,
+    "max_tokens": 512,
+    "top_k": 5,
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "cohere_api_key": "",
+    "openai_api_key": "",
+    "session_id": uuid.uuid4(),
+    "chat_id": uuid.uuid4(),
+    "chat_history": []
+}
+for k, v in defaults.items():
+    st.session_state.setdefault(k, v)
+
+def initialize_user():
+    session_id = st.session_state.session_id
+
+    docs_path = os.path.join(SESSIONS_DIR,"documents")
+    vector_path = os.path.join(SESSIONS_DIR,"vector_store")
+    chat_path = os.path.join(SESSIONS_DIR,"chat")
+    metadata_path = f"{SESSIONS_DIR}/metadata.json"
 
 
 # ==== Load CSS Styles ====

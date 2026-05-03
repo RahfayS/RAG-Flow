@@ -1,14 +1,21 @@
-
-from utils.build_config import build_llm_config, build_embedding_config
-from utils.chat_history_manager import ChatHistoryManager
 from langchain_classic.text_splitter import RecursiveCharacterTextSplitter,SentenceTransformersTokenTextSplitter
-from utils.rag_manager import RAGManager
-from utils.load_model import load_model,load_embedding_model, load_reranker_model
 
-from typing import TypedDict, Literal
+from utils.load_model import load_model,load_embedding_model, load_reranker_model
+from utils.build_config import build_llm_config, build_embedding_config
+from utils.pdf_utils import save_uploaded_files
+
 from pathlib import Path
 import streamlit as st
-import subprocess
+
+
+def status_line(label: str, ok: bool) -> str:
+    color = "#4a8a4a" if ok else "#4a4840"
+    dot = "●" if ok else "○"
+    return (
+        f'<div style="font-family:var(--font-mono);font-size:0.63rem;'
+        f'letter-spacing:0.1em;color:{color};margin-bottom:0.35rem">'
+        f'{dot} {label}</div>'
+    )
 
 
 
@@ -24,39 +31,11 @@ def load_css(path: str) -> None:
 
 load_css("assets/styles.css")
 
-
-#
-# ==== Session-state defaults ====
-defaults = {
-    "llm": None,
-    "embedding_model": None,
-    "text_splitter": None,
-    "reranker": None,
-    "temperature": 0.2,
-    "max_tokens": 512,
-    "top_k": 5,
-    "chunk_size": 256,
-    "chunk_overlap": 32,
-    "cohere_api_key": "",
-    "openai_api_key": "",
-}
-for k, v in defaults.items():
-    st.session_state.setdefault(k, v)
-
 # ==== Sidebar ====
 with st.sidebar:
     model_loaded = st.session_state.get("llm") is not None
     embed_loaded = st.session_state.get("embedding_model") is not None
     reranker_loaded = st.session_state.get("reranker") is not None
-
-    def status_line(label: str, ok: bool) -> str:
-        color = "#4a8a4a" if ok else "#4a4840"
-        dot   = "●" if ok else "○"
-        return (
-            f'<div style="font-family:var(--font-mono);font-size:0.63rem;'
-            f'letter-spacing:0.1em;color:{color};margin-bottom:0.35rem">'
-            f'{dot} {label}</div>'
-        )
 
     st.markdown(
         status_line("MODEL LOADED", model_loaded) +
@@ -251,3 +230,21 @@ with col_right:
                     st.success(f"Using: {st.session_state.reranker.model}")
                     pass
 st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+# ==== Data Uploading ====
+st.markdown("### Upload Data Sources")
+uploaded_files = st.file_uploader("Upload your PDF's",type = "pdf",accept_multiple_files=True)
+if uploaded_files:
+    with st.expander("Uploaded Status"):
+        for file in uploaded_files:
+            st.success(f"Uploaded {file.name}")
+        
+
+save_uploaded_files(uploaded_files,st.session_state.session_id)
+st.divider()
+
+# ==== Create Persistent Directory ====
+st.markdown("### Create Persistent Directory")
+
+if st.button("Create Persistent Directory"):
+    pass

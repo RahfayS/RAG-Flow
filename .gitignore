@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+.env
+memory
+data
+logs
+.DS_Store

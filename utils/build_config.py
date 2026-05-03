@@ -26,13 +26,12 @@ def build_llm_config(model: str) -> ModelConfig | None:
 
         case "Open-AI":
             st.write("Model: gpt-4o-mini")
-            if not st.session_state.openai_api_key:
-                st.session_state.open_ai_key = st.text_input("OpenAI API key", type="password",
-                                        value=st.session_state.api_key,
+            st.session_state.openai_api_key = st.text_input("OpenAI API key", type="password",
+                                        value=st.session_state.openai_api_key,
                                         label_visibility="collapsed",
                                         placeholder="OPEN_API_KEY")
-            if st.session_state.open_ai_key:
-                return {"type": "gpt", "model_name": "gpt-4o-mini", "api_key": st.session_state.open_ai_key}
+            if st.session_state.openai_api_key:
+                return {"type": "Open-AI", "model_name": "gpt-4o-mini", "api_key": st.session_state.openai_api_key}
     return None
 
 
@@ -51,11 +50,10 @@ def build_embedding_config(embedding_model:str)->ModelConfig | None:
         
         case "Open-AI":
             st.write("Model: text-embedding-3-large")
-            if not st.session_state.openai_api_key:
-                st.session_state.openai_key = st.text_input("Embed OpenAI API key", type="password",
-                                        value=st.session_state.api_key,
+            st.session_state.openai_api_key = st.text_input("Embed OpenAI API key", type="password",
+                                        value=st.session_state.openai_api_key,
                                         label_visibility="collapsed",
                                         placeholder="OPENAI_API_KEY")
             if st.session_state.openai_api_key:
-                return {"type": "gpt", "model_name": "text-embedding-3-large", "api_key": st.session_state.open_ai_key}
+                return {"type": "Open-AI", "model_name": "text-embedding-3-large", "api_key": st.session_state.openai_api_key}
     return None

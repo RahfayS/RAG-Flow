@@ -13,3 +13,4 @@ memory
 data
 logs
 .DS_Store
+.streamlit

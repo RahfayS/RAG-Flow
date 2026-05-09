@@ -1,16 +1,16 @@
-from config import SESSIONS_DIR
+from config import SESSIONS_DIR, DATA_DIR
 
 from typing import Any
 import streamlit as st
 import os
 
-def save_uploaded_files(files: list[Any], session_id: str)->None:
+def save_uploaded_files(files: list[Any],uid:int)->None:
     """Saves user uploaded files to disk"""
 
     if not files:
         return
 
-    user_dir = os.path.join(SESSIONS_DIR,f"session_{session_id}/documents")
+    user_dir = os.path.join(DATA_DIR,f"user_{uid}/documents")
     os.makedirs(user_dir, exist_ok=True)
 
     with st.expander("Saved Status"):

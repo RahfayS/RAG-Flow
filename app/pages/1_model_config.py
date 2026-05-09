@@ -1,8 +1,10 @@
 from langchain_classic.text_splitter import RecursiveCharacterTextSplitter,SentenceTransformersTokenTextSplitter
 
-from utils.initialize_session_state import initialize_session_state
+from db.model_preferences import ModelPreferencesDB
+
 from utils.load_model import load_model,load_embedding_model, load_reranker_model
 from utils.build_config import build_llm_config, build_embedding_config
+from utils.initialize_session_state import initialize_session_state
 from utils.pdf_utils import save_uploaded_files
 
 from pathlib import Path
@@ -203,14 +205,15 @@ with col_right:
         st.session_state.top_k         = top_k
         st.session_state.chunk_size    = chunk_size
         st.session_state.chunk_overlap = chunk_overlap
+        st.session_state.score_threshold = score_threshold
 
-        text_splitter = st.selectbox(
+        chunk_method = st.selectbox(
             "Chunking Method",
-            ["RecursiveTextSplitter","SentenceTransformerTokenTextSplitter"]
+            ["RecursiveCharacterTextSplitter","SentenceTransformerTokenTextSplitter"]
         )
-        st.session_state.text_splitter = RecursiveCharacterTextSplitter(chunk_size,chunk_overlap) if text_splitter == "RecursiveTextSplitter" else SentenceTransformersTokenTextSplitter(chunk_size)
-
-    st.markdown("### Re-ranker")
+        st.session_state.chunk_method = chunk_method
+        st.session_state.text_splitter = RecursiveCharacterTextSplitter(chunk_size,chunk_overlap) if chunk_method == "RecursiveCharacterTextSplitter" else SentenceTransformersTokenTextSplitter(chunk_size) 
+        st.markdown("### Re-ranker")
     with st.expander("Cohere Re-ranker  (optional)"):
         top_n = st.slider(
             "Top n",
@@ -219,6 +222,7 @@ with col_right:
         )
         st.markdown("##### Cohere API key")
         st.write("Using: rerank-english-v3.0")
+        st.session_state.top_n = top_n
         st.session_state.cohere_api_key = st.text_input(
             "COHERE_API_KEY",
             type="password",
@@ -234,6 +238,127 @@ with col_right:
                     pass
 st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
+
+st.markdown("### Save Preferences")
+with st.expander("Save Preferences"):
+
+    save_name = st.text_input("Preference Name")
+
+    if st.button("Save"):
+        if not save_name:
+            st.warning("Save name cannot be empty")
+        else:
+            created = st.session_state.preferences_db.add_preferences(
+                uid = st.session_state.uid,
+                save_name = save_name,
+                temp = st.session_state.temperature,
+                max_tokens = st.session_state.max_tokens,
+                model = st.session_state.llm_config["model_name"],
+                top_k = st.session_state.top_k,
+                chunk_size = st.session_state.chunk_size,
+                chunk_overlap = st.session_state.chunk_overlap,
+                score_thresh = st.session_state.score_threshold,
+                chunk_method = st.session_state.chunk_method,
+                top_n = st.session_state.top_n
+            )
+            if created:
+                st.success("Preferences saved")
+            else:
+                st.warning("Not saved")
+
+
+st.markdown("### Load Preferences")
+with st.expander("View Preferences"):
+
+    preferences = st.session_state.preferences_db.load_preferences(
+        uid=st.session_state.uid
+    )
+
+    if not preferences:
+        st.markdown(
+            '<div class="pref-empty">○ &nbsp; No saved preferences found.</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown('<div class="pref-grid">', unsafe_allow_html=True)
+
+        for p in preferences:
+            id, uid, save_name, temp, max_tokens, model, top_k, \
+            chunk_size, chunk_overlap, score_thresh, chunk_method, top_n = p
+
+            params = [
+                ("Temperature",    temp),
+                ("Max Tokens",     max_tokens),
+                ("Top-K",          top_k),
+                ("Chunk Size",     chunk_size),
+                ("Chunk Overlap",  chunk_overlap),
+                ("Score Thresh",   score_thresh),
+                ("Chunk Method",   chunk_method),
+                ("Top-N",          top_n),
+            ]
+
+            params_html = "".join(
+                f"""
+                <div class="pref-param">
+                    <span class="pref-param-label">{label}</span>
+                    <span class="pref-param-value">{value}</span>
+                </div>
+                """
+                for label, value in params
+            )
+
+            st.markdown(
+                f"""
+                <div class="pref-card">
+                    <div class="pref-card-header">
+                        <span class="pref-card-name">{save_name}</span>
+                        <span class="pref-card-model">{model}</span>
+                    </div>
+                    <div class="pref-params">
+                        {params_html}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            st.markdown("<div style='margin-top:0.6rem'></div>", unsafe_allow_html=True)
+
+
+            # Load
+            col_left, col_right = st.columns([2, 1], gap="large")
+            with col_left:
+
+                if st.button("Load", key=f"load_pref_{id}"):
+                    st.session_state.temperature   = temp
+                    st.session_state.max_tokens    = max_tokens
+                    st.session_state.top_k         = top_k
+                    st.session_state.chunk_size    = chunk_size
+                    st.session_state.chunk_overlap = chunk_overlap
+                    st.session_state.chunk_method  = chunk_method
+                    st.session_state.top_n         = top_n
+                    st.toast(f"Loaded '{save_name}'", icon="✦")
+
+            # Delete 
+            with col_right:
+                if st.button("Delete", key = f"delete_pref_{id}"):
+                    deleted = st.session_state.preferences_db.delete_preferences(
+                        id = id
+                    )
+                    if deleted:
+                        st.rerun()
+
+
+
+
+            st.markdown("---")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+
+
+
+
+
 # ==== Data Uploading ====
 st.markdown("### Upload Data Sources")
 uploaded_files = st.file_uploader("Upload your PDF's",type = "pdf",accept_multiple_files=True)
@@ -243,8 +368,9 @@ if uploaded_files:
             st.success(f"Uploaded {file.name}")
         
 
-save_uploaded_files(uploaded_files,st.session_state.session_id)
-st.divider()
+if st.session_state.uid:
+    save_uploaded_files(uploaded_files,st.session_state.uid)
+    
 
 # ==== Create Persistent Directory ====
 st.markdown("### Create Persistent Directory")

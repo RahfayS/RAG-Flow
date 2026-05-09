@@ -1,10 +1,8 @@
-from config import SESSIONS_DIR
 from utils.initialize_session_state import initialize_session_state
-import streamlit_authenticator as stauth
+from config import SESSIONS_DIR
+
 from pathlib import Path
 import streamlit as st
-from pathlib import Path
-import uuid
 import os
 
 
@@ -188,15 +186,55 @@ streamlit run app.py
 
 st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
-st.markdown("### Login Form ")
+# --- Login ---
+st.markdown(
+    """
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="login-eyebrow">Authentication</div>
+        <div class="login-title">Sign in to<br>your workspace.</div>
+        <p class="login-subtitle">
+          Access your documents, retrieval history, and<br>
+          saved pipeline configurations.
+        </p>
+    """,
+    unsafe_allow_html=True,
+)
 
-if st.button("Press to login"):
-    st.login("google")
+if not st.user["is_logged_in"]:
+    st.markdown('<div class="google-btn-wrap">', unsafe_allow_html=True)
+    if st.button("Continue with Google", use_container_width=True):
+        st.login("google")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-if st.user is not None:
-    st.session_state.user = st.user
+else:
+    # Persist user + register in DB on first login
+    if "user_added" not in st.session_state:
+        st.session_state.user = st.user
+        created = st.session_state.user_db.add_user(
+            sub   = st.session_state.user["sub"],
+            email = st.session_state.user["email"],
+            name  = st.session_state.user["name"],
+        )
+        st.session_state.uid = st.session_state.user_db.get_uid(st.session_state.user["sub"])
+        if created:
+            st.session_state.user_added = True
 
+    name = st.session_state.user.get("name", "User")
+    email = st.session_state.user.get("email", "")
 
-st.write(st.session_state.user)
+    st.markdown(
+        f"""
+        <div class="login-welcome">
+          <div class="login-welcome-icon">✦</div>
+          <div>
+            <div class="login-welcome-name">{name}</div>
+            <div class="login-welcome-sub">● Signed in · {email}</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-
+# Close the card div
+st.markdown("</div></div>", unsafe_allow_html=True)

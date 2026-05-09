@@ -9,8 +9,10 @@ wheels/
 # Virtual environments
 .venv
 .env
-memory
+
+database
 data
 logs
 .DS_Store
 .streamlit
+

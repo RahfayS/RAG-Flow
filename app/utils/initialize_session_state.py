@@ -1,9 +1,12 @@
+from db.user_db import UserDB
+from db.model_preferences import ModelPreferencesDB
+
 import streamlit as st
 import uuid
 
 def initialize_session_state():
     defaults = {
-        "user": None,
+        "user": {},
         "llm": None,
         "embedding_model": None,
         "text_splitter": None,
@@ -13,9 +16,16 @@ def initialize_session_state():
         "top_k": 5,
         "chunk_size": 256,
         "chunk_overlap": 32,
+        "score_threshold" : 0.2,
+        "chunk_method": None,
+        "text_splitter": None,
+        "top_n": 3,
         "cohere_api_key": "",
         "openai_api_key": "",
-        "chat_history": []
+        "chat_history": [],
+        "user_db": UserDB(),
+        "uid": None,
+        "preferences_db": ModelPreferencesDB()
     }
 
     for k, v in defaults.items():

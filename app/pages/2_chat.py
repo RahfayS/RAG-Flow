@@ -1,4 +1,4 @@
-from services.chat_history_manager import ChatHistoryManager
+from app.db.chat_history_manager import ChatHistoryManager
 from utils.initialize_session_state import initialize_session_state
 import streamlit as st
 from pathlib import Path
